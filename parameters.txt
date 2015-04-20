@@ -1,0 +1,51 @@
+# This file contains the parameter settings used throughout the process
+# of calling somatic mutations. Please, make sure that this file is located
+# in the main directory of the repository and bears the name 'parameters.txt'
+# 
+# The options/parameters that can be set for running the programs in this 
+# project are numerous. Here, we only concern us with the parameters most 
+# relevant for the TCGA Dream Challenge. The default values are used for
+# the other parameters/options.  
+#
+# Every line in this file that starts with a # or is empty is ignored. 
+# Lines that specify the parameter values start with $ and are 
+# of the following form: 
+#
+# 	$<parameter_indicator> = <value> 
+# 
+# Parameters for observation extraction 
+# -------------------------------------
+#
+# The parameters used for extracting observations with 
+# 'extract-observations.py'. 
+#
+# 1. The alinger that was used (can be 'laser' or 'bwa'). 
+$ALIGNER = bwa
+# 
+# Parameters for calling 
+# ----------------------
+#
+# 2. Level of impurity of the cancer sample, i.e., the percentage of cells
+# in the tumour sample that are actually healthy: 
+$ALPHA = 0.20 
+#
+# 3. Probability of observing an overlapping alignment without a split when
+# a deletion is present: 
+$EPS_P_DEL = 0.0340
+#
+# 4. Probability of observing an overlapping alignment without a split when 
+# an insertion is present: 
+$EPS_P_INS = 0.2126 
+#
+# 5. Probability of observing an alignment with a split when no deletion or 
+# insertion is present: 
+$EPS_A = 0.0001 
+#
+# (Parameters 3,4 and 5 are estimated on the basis of simulated data.) 
+#
+# 6. Variants are called either 'somatic' or 'not somatic' on the basis of 
+# their posterior probabilities. This is done is such a way that the posterior
+# expected F_beta score (a weighted harmonic mean of the recall and 
+# precision) is maximized. The beta here reflects how much more important
+# recall is than precision. Common values of beta are 1/2, 1 and 2. 
+$BETA = 1.0  
