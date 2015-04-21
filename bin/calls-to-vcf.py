@@ -22,7 +22,6 @@ application. Outputs somatic calls only!
 
 header = """##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
 ##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Indicates if record is a somatic mutation">
-##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"""
 
@@ -146,7 +145,7 @@ def main():
 			svlen = returnIndelLength(vcf_record)
 			if isDeletion(vcf_record): 
 				end = vcf_record.POS + svlen 
-				variant_description = "%s\t%s\t.\t%s\t%s\t.\tPASS\tSOMATIC;SVTYPE=DEL;END=%d;SVLEN=%d"%(
+				variant_description = "%s\t%s\t.\t%s\t%s\t.\tPASS\tSOMATIC;END=%d;SVLEN=%d"%(
 					vcf_record.CHROM,
 					vcf_record.POS,
 					vcf_record.REF,
@@ -154,7 +153,7 @@ def main():
 					vcf_record.POS + svlen,
 					-1 * svlen)
 			elif isInsertion(vcf_record):
-				variant_description =  "%s\t%s\t.\t%s\t%s\t.\tPASS\tSOMATIC;SVTYPE=INS;END=%d;SVLEN=%d"%(
+				variant_description =  "%s\t%s\t.\t%s\t%s\t.\tPASS\tSOMATIC;END=%d;SVLEN=%d"%(
 					vcf_record.CHROM,
 					vcf_record.POS,
 					vcf_record.REF,
