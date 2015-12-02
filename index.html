@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Somatic-indel-calling : A Bayesian latent variable model for calling somatic indels">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Somatic-indel-calling</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/louisdijkstra/somatic-indel-calling">View on GitHub</a>
+
+          <h1 id="project_title">Somatic-indel-calling</h1>
+          <h2 id="project_tagline">A Bayesian latent variable model for calling somatic indels</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/louisdijkstra/somatic-indel-calling/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/louisdijkstra/somatic-indel-calling/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="somatic-indel-calling" class="anchor" href="#somatic-indel-calling" aria-hidden="true"><span class="octicon octicon-link"></span></a>Somatic Indel Calling</h1>
+
+<p>This repository contains the code/scripts for discovering somatic mutations by using a Bayesian latent variable model that links (next-generation sequencing) reads and their alignments to the (latent) allele frequencies of indels in both the healthy/control as the cancer/disease sample. The pipeline is written in both C and Python. </p>
+
+<hr>
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<h3>
+<a id="dependencies" class="anchor" href="#dependencies" aria-hidden="true"><span class="octicon octicon-link"></span></a>Dependencies</h3>
+
+<p>The compilation of the C code requires the following libraries to be installed:  </p>
+
+<ul>
+<li>
+<p>The <em>GNU scientific library</em> (GSL - see <a href="http://www.gnu.org/software/gsl">http://www.gnu.org/software/gsl</a>), in particular:</p>
+
+<ul>
+<li>
+<code>gsl_math.h</code>,</li>
+<li>
+<code>gsl_min.h</code> and </li>
+<li>
+<code>gsl_errno.h</code>. </li>
+</ul>
+</li>
+<li><p>The <em>GMP library</em> for arbitrary precision arithmetic (see <a href="https://gmplib.org">https://gmplib.org</a>). </p></li>
+</ul>
+
+<p>and</p>
+
+<ul>
+<li>
+<em>CMake</em> (see <a href="http://www.cmake.org">http://www.cmake.org</a>)</li>
+</ul>
+
+<p>The project depends for Python on the following packages: </p>
+
+<ul>
+<li>
+<em>PySAM</em> (see <a href="https://code.google.com/p/pysam/">https://code.google.com/p/pysam/</a>) for working with BAM/SAM files and</li>
+<li>
+<em>PyVCF</em> (see <a href="https://github.com/jamescasbon/PyVCF">https://github.com/jamescasbon/PyVCF</a>) for working with VCF files. </li>
+</ul>
+
+<p>PySAM requires the installation of </p>
+
+<ul>
+<li>
+<em>SAMtools</em> (see <a href="http://samtools.sourceforge.net">http://samtools.sourceforge.net</a>)</li>
+</ul>
+
+<h3>
+<a id="installation-instructions" class="anchor" href="#installation-instructions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation instructions</h3>
+
+<p>In order to compile the C code in the folder <code>src/</code>, type in the main directory: </p>
+
+<pre><code>    $ cmake . 
+    $ make
+    $ make install 
+</code></pre>
+
+<p>The executable <code>sm_caller</code> will be placed in the <code>bin/</code> folder together with the Python scripts. CMake will check automatically whether the GSL and GMP libraries are installed. </p>
+
+<hr>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>First, make sure to set the parameters in <code>parameters.txt</code> (in the main directory). The parameters are currently set to their default values. </p>
+
+<p>In order to use the somatic indel calling pipeline, type in the main directory: </p>
+
+<pre><code>$ python call-somatic-variants.py &lt;vcf-file&gt; &lt;healthy-bam&gt; &lt;cancer-bam&gt;  
+</code></pre>
+
+<p>where </p>
+
+<ul>
+<li><p><code>&lt;vcf-file&gt;</code> - sorted VCF file with potential somatic variants.</p></li>
+<li><p><code>&lt;healthy-bam&gt;</code> - sorted and indexed BAM file of the healthy/control sample.</p></li>
+<li><p><code>&lt;cancer-bam&gt;</code> - sorted and indexed BAM file of the cancer/disease sample. </p></li>
+</ul>
+
+<p>(One could use the option <code>-v</code> for a more elaborate output). A VCF file containing all indels deemed somatic is stored in the <code>results/</code> directory. See for a more elaborate description of the pipeline the following section. </p>
+
+<h2>
+<a id="pipeline" class="anchor" href="#pipeline" aria-hidden="true"><span class="octicon octicon-link"></span></a>Pipeline</h2>
+
+<p>The main script <code>call-somatic-mutations.py</code> executes the following steps: </p>
+
+<ol>
+<li><p>It reads in the parameters used throughout the entire pipeline from the <code>parameters.txt</code> file. </p></li>
+<li><p>It runs the <code>extract-observations.py</code> script; for every indel in the given VCF, the script collects all relevant alignments from the healthy/control and cancer/disease BAMs. (Relevant meaning that the alignment overlaps with the indel in question.) Both insert sizes and splits are taken into consideration.
+The output is stored as a <code>.raw-observations</code> file (see the File formats section) in the <code>intermediate-results/</code> folder. </p></li>
+<li><p>After having collected all the relevant data, the program <code>bin/sm_caller</code> is called. This program makes the actual calls and determines the posterior probabilities of the variants to be somatic, germline or absent. The results are stored as a <code>.calls</code> file (see the File formats section) in the <code>intermediate-results/</code> folder. </p></li>
+<li><p>Finally, the script <code>bin/calls-to-vcf.py</code> takes in both the <code>.calls</code>-file of the previous step and the original VCF file and outputs a VCF file (in format v4.1) in the <code>results/</code> directory. Note that it only outputs the variants deemed somatic. </p></li>
+</ol>
+
+<hr>
+
+<h2>
+<a id="directory-structure" class="anchor" href="#directory-structure" aria-hidden="true"><span class="octicon octicon-link"></span></a>Directory structure</h2>
+
+<p>The repository consists of the following directories: </p>
+
+<ul>
+<li><p><code>bin/</code> - contains the Python scripts and executables used for calling the somatic mutations. </p></li>
+<li><p><code>include/</code> - contains the header files for the C-code.</p></li>
+<li><p><code>intermediate-results/</code> - will contain all the intermediate results, i.e., the so-called 'raw observations' and the 'calls' file. See for a description of their format Section File formats.</p></li>
+<li><p><code>results/</code> - will contain the VCF file with the somatic calls.</p></li>
+<li><p><code>python/</code> - contains Python code that is re-used throughout some of the scripts in the <code>bin</code>-folder.</p></li>
+<li><p><code>src/</code> - contains the C-code for the somatic mutation caller. </p></li>
+</ul>
+
+<p>In addition, the repository contains in the main directory the file <code>parameters.txt</code>. In this file, one can set the main parameters that play a role for calling the somatic mutations. </p>
+
+<hr>
+
+<h2>
+<a id="file-formats" class="anchor" href="#file-formats" aria-hidden="true"><span class="octicon octicon-link"></span></a>File formats</h2>
+
+<p>This section contains a description of the two (novel) file formats used in this projects: <code>.raw-observations</code> and <code>.calls</code>. </p>
+
+<h3>
+<a id="raw-observations" class="anchor" href="#raw-observations" aria-hidden="true"><span class="octicon octicon-link"></span></a>.raw-observations</h3>
+
+<p>This file format is used as a summary of the relevant data
+from a VCF file and two BAM files; one from the healthy and one
+from the cancer sample. Every indel in the given VCF file is 
+represented by 9 lines. The first line contains information
+on the variant and is formatted as follows (tab-delimited): </p>
+
+<pre><code>&lt;type&gt;  &lt;chr&gt;   &lt;pos&gt;   &lt;length&gt;
+</code></pre>
+
+<p>where <code>&lt;type&gt;</code> is '+' in case of an insertion and '-' for a 
+deletion. The chromosome and the variant's postion are given by 
+<code>&lt;chr&gt;</code> and <code>&lt;pos&gt;</code>. The indel's length is given by <code>&lt;length&gt;</code>. </p>
+
+<p>The next four lines represent the data of the healthy sample. The 
+later four are for the cancer sample. The first line represents in
+both cases the observed insert sizes. The second the associated 
+alignment probabilities. The third line contains the split read 
+observations, i.e., an observation is 1 when a read contained a split 
+that supported the presence of the indel and a 0 otherwise. The 
+fourth line contains the alignment probabilities associated with 
+the split read observations. </p>
+
+<h3>
+<a id="calls" class="anchor" href="#calls" aria-hidden="true"><span class="octicon octicon-link"></span></a>.calls</h3>
+
+<p>Every line represents one variant and consists of 10 columns in total (tab-delimited):</p>
+
+<ol>
+<li><p><em>type</em> - the symbol <code>+</code> represents an insertion and <code>-</code> a deletion;</p></li>
+<li><p><em>chromosome</em> - the chromosome the variant is on;</p></li>
+<li><p><em>position</em> - its position (the same as in the original VCF file);</p></li>
+<li><p><em>length</em> - the indel's length;</p></li>
+<li><p>estimate of the healthy variant allele frequency. This value can either be 0.0 (the variant is absent on both chromosomes), 0.5 (heterozygous for the variant) and 1.0 (homozygous for the variant); </p></li>
+<li><p>estimate of the cancer variant allele frequency. This value lies between 0 and 1 and reflects the proportion of cancer haplotypes that harbour the variant in question;</p></li>
+<li><p>the maximum loglikelihood associated with the estimates; </p></li>
+<li><p>the posterior probability of the variant to be SOMATIC; </p></li>
+<li><p>the posterior probability of the variant to be GERMLINE;  </p></li>
+<li><p>the posterior probability of the variant to be NOT PRESENT.    </p></li>
+</ol>
+
+<hr>
+
+<h2>
+<a id="contact" class="anchor" href="#contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contact</h2>
+
+<p>Louis Dijkstra</p>
+
+<p><strong>E-mail</strong>: louisdijkstra (at) gmail.com</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Somatic-indel-calling maintained by <a href="https://github.com/louisdijkstra">louisdijkstra</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
